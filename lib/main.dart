@@ -1,18 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flame/game.dart';
+import 'package:flame/components.dart';
+import 'package:flame/events.dart';
+import 'package:get/get.dart';
 
 void main() {
-  runApp(const MainApp());
+  runApp(GameApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
+class GameApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
+    return GetMaterialApp(
+      home: StartScreen(),
+    );
+  }
+}
+
+class StartScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text("Welcome to Spelit Buttons Game!", style: TextStyle(fontSize: 48)),
+            Padding(
+              padding: EdgeInsets.all(16),
+            ),
+            ElevatedButton(
+              child: Text(
+                "Start",
+                style: TextStyle(fontSize: 24),
+              ),
+              onPressed: null,//() => Get.to(() => GameScreen()),
+            ),
+          ],
         ),
       ),
     );
