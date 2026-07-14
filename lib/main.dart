@@ -5,6 +5,11 @@ import 'package:flame/events.dart';
 import 'package:get/get.dart';
 import 'dart:math';
 
+class Breakpoints {
+  static const mobile = 500;
+  static const tablet = 700;
+}
+
 void main() {
   runApp(GameApp());
 }
@@ -58,8 +63,11 @@ class LevelScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text("Choose level", style: TextStyle(fontSize: 30)),
+            Padding(padding: EdgeInsets.all(10)),
             ElevatedButton(child: Text("Level 1"), onPressed: () => Get.to(() => GameScreen(level: 1))),
+            Padding(padding: EdgeInsets.all(10)),
             ElevatedButton(child: Text("Level 2"), onPressed: () => Get.to(() => GameScreen(level: 2))),
+            Padding(padding: EdgeInsets.all(10)),
             ElevatedButton(child: Text("Level 3"), onPressed: () => Get.to(() => GameScreen(level: 3))),
           ],
         ),
@@ -69,9 +77,11 @@ class LevelScreen extends StatelessWidget {
 }
 
 class ResultScreen extends StatelessWidget {
+  final String endReason;
+  final int level;
   final int score;
-  final int gameTime;
-  const ResultScreen({required this.score, required this.gameTime});
+  final double timeUsed;
+  const ResultScreen({required this.endReason, required this.level, required this.score, required this.timeUsed});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,13 +90,22 @@ class ResultScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text("You got $score points in $gameTime seconds!", 
-              style: TextStyle(fontSize: 30)
-            ),
-            Padding(padding: EdgeInsets.all(16),),
+            endReason == "time"
+              ? Text("Unfortunately you didn't pass the level...", 
+                  style: TextStyle(fontSize: 30)
+                )
+              : Column(children: [
+                  Text("You passed level $level!", 
+                    style: TextStyle(fontSize: 30)
+                  ),
+                  Text("You got $score points in ${timeUsed.toStringAsFixed(2)} seconds!", 
+                    style: TextStyle(fontSize: 30)
+                  ),
+                ]),
+            Padding(padding: EdgeInsets.all(10)),
             ElevatedButton(
-              child: Text("Back to start", style: TextStyle(fontSize: 24)),
-              onPressed: () => Get.to(() => StartScreen()),
+              child: Text("Play again", style: TextStyle(fontSize: 24)),
+              onPressed: () => Get.to(() => LevelScreen()),
             ),
           ],
         ),
@@ -108,22 +127,31 @@ class GameScreen extends StatelessWidget {
 
 class SpelitGame extends FlameGame {
   final int level;
-  var gameFinished = false;
-  var gameTime;
-  var timeLeft;
-  var score = 0;
-  SpelitGame({required this.level}) {
-    if (this.level == 1) {
-      timeLeft = gameTime = 10;
-    } else if (this.level == 2) {
-      timeLeft = gameTime = 30;
+  bool gameFinished = false;
+  //String endReason = "";
+  double gameTime = 0.0;
+  double timeLeft = 0.0;
+  int score = 0;
+  SpelitGame({required this.level});
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    print("Screen size: ${size.x} x ${size.y}");
+    if (level == 1) {
+      timeLeft = gameTime = 10.0;
+    } else if (level == 2) {
+      timeLeft = gameTime = 30.0;
     } else {
-      timeLeft = gameTime = 60;
+      timeLeft = gameTime = 60.0;
     }
-    add(TapCircle1());
-    add(TapCircle2());
-    add(TapCircle3());
-    add(TapCircle4());
+    double x1Position = size.x > 800 ? (size.x-800-(size.x-800)/2+4) : 0.5*size.x/100;
+    double x2Position = size.x > 800 ? (size.x-800-(size.x-800)/2+204) : 25.5*size.x/100;
+    double x3Position = size.x > 800 ? (size.x-800-(size.x-800)/2+404) : 50.5*size.x/100;
+    double x4Position = size.x > 800 ? (size.x-800-(size.x-800)/2+604) : 75.5*size.x/100;
+    add(TapCircle1(size.x, size.y, x1Position));
+    add(TapCircle2(size.x, size.y, x2Position));
+    add(TapCircle3(size.x, size.y, x3Position));
+    add(TapCircle4(size.x, size.y, x4Position));
   }
   @override
   void update(double dt) {
@@ -131,25 +159,31 @@ class SpelitGame extends FlameGame {
     timeLeft -= dt;
     if (timeLeft <= 0 && !gameFinished) {
       gameFinished = true;
-      Get.offAll(() => ResultScreen(score: score, gameTime: gameTime));
+      Get.offAll(() => ResultScreen(endReason: "time", level: level, score: score, timeUsed: gameTime-timeLeft));
     }
   }
   incrementScore() {
     score++;
-    if (score >= 5) {
-      Get.offAll(() => ResultScreen(score: score, gameTime: gameTime));
+    if (level == 1 && score >= 3) {
+      Get.offAll(() => ResultScreen(endReason: "score", level: level, score: score, timeUsed: gameTime-timeLeft));
+    } else if (level == 2 && score >= 15) {
+      Get.offAll(() => ResultScreen(endReason: "score", level: level, score: score, timeUsed: gameTime-timeLeft));
+    } else if (level == 3 && score >= 50) {
+      Get.offAll(() => ResultScreen(endReason: "score", level: level, score: score, timeUsed: gameTime-timeLeft));
     }
   }
 }
 
-class TapCircle1 extends CircleComponent with HasGameReference<SpelitGame>, TapCallbacks, HasVisibility {
+class TapCircle1 extends CircleComponent with HasGameRef<SpelitGame>, TapCallbacks, HasVisibility {
   final Random random = Random();
   double timeUntilNextAppearance = 2.0;
   double visibleTime = 1.0;
-  TapCircle1()
+  double x = 0.0;
+  double y = 0.0;
+  TapCircle1(x, y, x1Position)
     : super(
-      position: Vector2(200, 200),
-      radius: 70,
+      position: Vector2(x1Position, 200),
+      radius: min(x*0.115, 192/2),
     ) {
       paint.color = Colors.blue;
       isVisible = false;
@@ -185,10 +219,12 @@ class TapCircle2 extends CircleComponent with HasGameReference<SpelitGame>, TapC
   final Random random = Random();
   double timeUntilNextAppearance = 2.0;
   double visibleTime = 1.0;
-  TapCircle2()
+  double x = 0.0;
+  double y = 0.0;
+  TapCircle2(x, y, x2Position)
     : super(
-      position: Vector2(350, 200),
-      radius: 70,
+      position: Vector2(x2Position, 200),
+      radius: min(x*0.115, 192/2),
     ) {
       paint.color = Colors.green;
       isVisible = false;
@@ -224,10 +260,12 @@ class TapCircle3 extends CircleComponent with HasGameReference<SpelitGame>, TapC
   final Random random = Random();
   double timeUntilNextAppearance = 2.0;
   double visibleTime = 1.0;
-  TapCircle3()
+  double x = 0.0;
+  double y = 0.0;
+  TapCircle3(x, y, x3Position)
     : super(
-      position: Vector2(500, 200),
-      radius: 70,
+      position: Vector2(x3Position, 200),
+      radius: min(x*0.115, 192/2),
     ) {
       paint.color = Colors.orange;
       isVisible = false;
@@ -263,10 +301,12 @@ class TapCircle4 extends CircleComponent with HasGameReference<SpelitGame>, TapC
   final Random random = Random();
   double timeUntilNextAppearance = 2.0;
   double visibleTime = 1.0;
-  TapCircle4()
+  double x = 0.0;
+  double y = 0.0;
+  TapCircle4(x, y, x4Position)
     : super(
-      position: Vector2(650, 200),
-      radius: 70,
+      position: Vector2(x4Position, 200),
+      radius: min(x*0.115, 192/2),
     ) {
       paint.color = Colors.red;
       isVisible = false;
