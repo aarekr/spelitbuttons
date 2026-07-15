@@ -3,6 +3,8 @@ import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:get/get.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive/hive.dart';
 import 'dart:math';
 
 class Breakpoints {
@@ -10,7 +12,33 @@ class Breakpoints {
   static const tablet = 700;
 }
 
-void main() {
+class LevelController {
+  final storage = Hive.box("storage");
+  int get levelOne => storage.get('one') ?? 0;
+  int get levelTwo => storage.get('two') ?? 0;
+  int get levelThree => storage.get('three') ?? 0;
+  int get losses => storage.get('losses') ?? 0;
+  void increment(endReason, level) {
+    if (endReason == 'score' && level == 1) {
+      print("level one passed, adding");
+      storage.put('one', levelOne + 1);
+    } else if (endReason == 'score' && level == 2) {
+      print("level two passed, adding");
+      storage.put('two', levelTwo + 1);
+    } else if (endReason == 'score' && level == 3) {
+      print("level three passed, adding");
+      storage.put('three', levelThree + 1);
+    } else if (endReason == 'time') {
+      print("time missed, adding");
+      storage.put('losses', losses + 1);
+    }
+  }
+}
+
+Future<void> main() async {
+  await Hive.initFlutter();
+  await Hive.openBox("storage");
+  Get.lazyPut<LevelController>(() => LevelController());
   runApp(GameApp());
 }
 
@@ -54,6 +82,7 @@ class StartScreen extends StatelessWidget {
 }
 
 class LevelScreen extends StatelessWidget {
+  final controller = Get.put(LevelController());
   @override
   Widget build(BuildContext context) {
     return Scaffold(body: 
@@ -63,12 +92,26 @@ class LevelScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text("Choose level", style: TextStyle(fontSize: 30)),
-            Padding(padding: EdgeInsets.all(10)),
+            Padding(padding: EdgeInsets.all(12)),
             ElevatedButton(child: Text("Level 1"), onPressed: () => Get.to(() => GameScreen(level: 1))),
-            Padding(padding: EdgeInsets.all(10)),
+            Padding(padding: EdgeInsets.all(12)),
             ElevatedButton(child: Text("Level 2"), onPressed: () => Get.to(() => GameScreen(level: 2))),
-            Padding(padding: EdgeInsets.all(10)),
+            Padding(padding: EdgeInsets.all(12)),
             ElevatedButton(child: Text("Level 3"), onPressed: () => Get.to(() => GameScreen(level: 3))),
+            Padding(padding: EdgeInsets.all(12)),
+            Text('You have passed level 1: ${controller.levelOne} ${controller.levelOne==1 ? 'time' : 'times'}',
+              style: TextStyle(fontSize: 20)
+            ),
+            Text('You have passed level 2: ${controller.levelTwo} ${controller.levelTwo==1 ? 'time' : 'times'}',
+              style: TextStyle(fontSize: 20)
+            ),
+            Text('You have passed level 3: ${controller.levelThree} ${controller.levelThree==1 ? 'time' : 'times'}',
+              style: TextStyle(fontSize: 20)
+            ),
+            Padding(padding: EdgeInsets.all(10)),
+            Text('You have lost ${controller.losses} ${controller.losses==1 ? 'time' : 'times'}',
+              style: TextStyle(fontSize: 16)
+            ),
           ],
         ),
       )
@@ -77,11 +120,16 @@ class LevelScreen extends StatelessWidget {
 }
 
 class ResultScreen extends StatelessWidget {
+  final controller = Get.find<LevelController>();
   final String endReason;
   final int level;
   final int score;
   final double timeUsed;
-  const ResultScreen({required this.endReason, required this.level, required this.score, required this.timeUsed});
+  ResultScreen({required this.endReason, required this.level, required this.score, required this.timeUsed});
+  String handleGameEnd(endReason, level) {
+    controller.increment(endReason, level);
+    return endReason;
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,7 +153,10 @@ class ResultScreen extends StatelessWidget {
             Padding(padding: EdgeInsets.all(10)),
             ElevatedButton(
               child: Text("Play again", style: TextStyle(fontSize: 24)),
-              onPressed: () => Get.to(() => LevelScreen()),
+              onPressed: () => {
+                handleGameEnd(endReason, level),
+                Get.to(() => LevelScreen()),
+              },
             ),
           ],
         ),
@@ -128,7 +179,6 @@ class GameScreen extends StatelessWidget {
 class SpelitGame extends FlameGame {
   final int level;
   bool gameFinished = false;
-  //String endReason = "";
   double gameTime = 0.0;
   double timeLeft = 0.0;
   int score = 0;
@@ -136,7 +186,6 @@ class SpelitGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    print("Screen size: ${size.x} x ${size.y}");
     if (level == 1) {
       timeLeft = gameTime = 10.0;
     } else if (level == 2) {
@@ -183,7 +232,7 @@ class TapCircle1 extends CircleComponent with HasGameRef<SpelitGame>, TapCallbac
   TapCircle1(x, y, x1Position)
     : super(
       position: Vector2(x1Position, 200),
-      radius: min(x*0.115, 192/2),
+      radius: min(x*0.115, 192/2),  // max diameter is 192 (radius: 96)
     ) {
       paint.color = Colors.blue;
       isVisible = false;
