@@ -18,18 +18,15 @@ class LevelController {
   int get levelTwo => storage.get('two') ?? 0;
   int get levelThree => storage.get('three') ?? 0;
   int get losses => storage.get('losses') ?? 0;
+
   void increment(endReason, level) {
     if (endReason == 'score' && level == 1) {
-      print("level one passed, adding");
       storage.put('one', levelOne + 1);
     } else if (endReason == 'score' && level == 2) {
-      print("level two passed, adding");
       storage.put('two', levelTwo + 1);
     } else if (endReason == 'score' && level == 3) {
-      print("level three passed, adding");
       storage.put('three', levelThree + 1);
     } else if (endReason == 'time') {
-      print("time missed, adding");
       storage.put('losses', losses + 1);
     }
   }
@@ -63,14 +60,9 @@ class StartScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text("Welcome to Spelit Buttons Game!", style: TextStyle(fontSize: 32)),
-              Padding(
-                padding: EdgeInsets.all(16),
-              ),
+              Padding(padding: EdgeInsets.all(16)),
               ElevatedButton(
-                child: Text(
-                  "Start",
-                  style: TextStyle(fontSize: 24),
-                ),
+                child: Text("Start", style: TextStyle(fontSize: 24)),
                 onPressed: () => Get.to(() => LevelScreen()),
               ),
             ],
@@ -83,6 +75,7 @@ class StartScreen extends StatelessWidget {
 
 class LevelScreen extends StatelessWidget {
   final controller = Get.put(LevelController());
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(body: 
@@ -125,11 +118,13 @@ class ResultScreen extends StatelessWidget {
   final int level;
   final int score;
   final double timeUsed;
+
   ResultScreen({required this.endReason, required this.level, required this.score, required this.timeUsed});
   String handleGameEnd(endReason, level) {
     controller.increment(endReason, level);
     return endReason;
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -139,13 +134,9 @@ class ResultScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             endReason == "time"
-              ? Text("Unfortunately you didn't pass the level...", 
-                  style: TextStyle(fontSize: 30)
-                )
+              ? Text("Unfortunately you didn't pass the level...", style: TextStyle(fontSize: 30))
               : Column(children: [
-                  Text("You passed level $level!", 
-                    style: TextStyle(fontSize: 30)
-                  ),
+                  Text("You passed level $level!",  style: TextStyle(fontSize: 30)),
                   Text("You got $score points in ${timeUsed.toStringAsFixed(2)} seconds!", 
                     style: TextStyle(fontSize: 30)
                   ),
@@ -168,6 +159,7 @@ class ResultScreen extends StatelessWidget {
 class GameScreen extends StatelessWidget {
   final int level;
   const GameScreen({required this.level});
+
   @override
   Widget build(BuildContext context) {
     return GameWidget(
@@ -182,7 +174,9 @@ class SpelitGame extends FlameGame {
   double gameTime = 0.0;
   double timeLeft = 0.0;
   int score = 0;
+
   SpelitGame({required this.level});
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -193,15 +187,18 @@ class SpelitGame extends FlameGame {
     } else {
       timeLeft = gameTime = 60.0;
     }
+
     double x1Position = size.x > 800 ? (size.x-800-(size.x-800)/2+4) : 0.5*size.x/100;
     double x2Position = size.x > 800 ? (size.x-800-(size.x-800)/2+204) : 25.5*size.x/100;
     double x3Position = size.x > 800 ? (size.x-800-(size.x-800)/2+404) : 50.5*size.x/100;
     double x4Position = size.x > 800 ? (size.x-800-(size.x-800)/2+604) : 75.5*size.x/100;
+
     add(TapCircle1(size.x, size.y, x1Position));
     add(TapCircle2(size.x, size.y, x2Position));
     add(TapCircle3(size.x, size.y, x3Position));
     add(TapCircle4(size.x, size.y, x4Position));
   }
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -211,6 +208,7 @@ class SpelitGame extends FlameGame {
       Get.offAll(() => ResultScreen(endReason: "time", level: level, score: score, timeUsed: gameTime-timeLeft));
     }
   }
+
   incrementScore() {
     score++;
     if (level == 1 && score >= 3) {
@@ -229,6 +227,7 @@ class TapCircle1 extends CircleComponent with HasGameRef<SpelitGame>, TapCallbac
   double visibleTime = 1.0;
   double x = 0.0;
   double y = 0.0;
+
   TapCircle1(x, y, x1Position)
     : super(
       position: Vector2(x1Position, 200),
@@ -237,6 +236,7 @@ class TapCircle1 extends CircleComponent with HasGameRef<SpelitGame>, TapCallbac
       paint.color = Colors.blue;
       isVisible = false;
     }
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -254,6 +254,7 @@ class TapCircle1 extends CircleComponent with HasGameRef<SpelitGame>, TapCallbac
       }
     }
   }
+
   @override
   void onTapDown(TapDownEvent event) {
     if (isVisible) {
@@ -270,6 +271,7 @@ class TapCircle2 extends CircleComponent with HasGameReference<SpelitGame>, TapC
   double visibleTime = 1.0;
   double x = 0.0;
   double y = 0.0;
+
   TapCircle2(x, y, x2Position)
     : super(
       position: Vector2(x2Position, 200),
@@ -278,6 +280,7 @@ class TapCircle2 extends CircleComponent with HasGameReference<SpelitGame>, TapC
       paint.color = Colors.green;
       isVisible = false;
     }
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -295,6 +298,7 @@ class TapCircle2 extends CircleComponent with HasGameReference<SpelitGame>, TapC
       }
     }
   }
+
   @override
   void onTapDown(TapDownEvent event) {
     if (isVisible) {
@@ -311,6 +315,7 @@ class TapCircle3 extends CircleComponent with HasGameReference<SpelitGame>, TapC
   double visibleTime = 1.0;
   double x = 0.0;
   double y = 0.0;
+
   TapCircle3(x, y, x3Position)
     : super(
       position: Vector2(x3Position, 200),
@@ -319,6 +324,7 @@ class TapCircle3 extends CircleComponent with HasGameReference<SpelitGame>, TapC
       paint.color = Colors.orange;
       isVisible = false;
     }
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -336,6 +342,7 @@ class TapCircle3 extends CircleComponent with HasGameReference<SpelitGame>, TapC
       }
     }
   }
+
   @override
   void onTapDown(TapDownEvent event) {
     if (isVisible) {
@@ -352,6 +359,7 @@ class TapCircle4 extends CircleComponent with HasGameReference<SpelitGame>, TapC
   double visibleTime = 1.0;
   double x = 0.0;
   double y = 0.0;
+
   TapCircle4(x, y, x4Position)
     : super(
       position: Vector2(x4Position, 200),
@@ -360,6 +368,7 @@ class TapCircle4 extends CircleComponent with HasGameReference<SpelitGame>, TapC
       paint.color = Colors.red;
       isVisible = false;
     }
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -377,6 +386,7 @@ class TapCircle4 extends CircleComponent with HasGameReference<SpelitGame>, TapC
       }
     }
   }
+
   @override
   void onTapDown(TapDownEvent event) {
     if (isVisible) {
